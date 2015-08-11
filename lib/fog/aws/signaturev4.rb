@@ -109,11 +109,22 @@ DATA
         canonical_headers = ''
 
         for key in headers.keys.sort_by {|k| k.to_s.downcase}
-          canonical_headers << "#{key.to_s.downcase}:#{headers[key].to_s.strip}\n"
+          canonical_headers << "#{key.to_s.downcase}:#{normalize_header_value(headers[key].to_s)}\n"
         end
         canonical_headers
       end
 
+      #the sig4 docs say this should be done according to RFC2616, ie linear white space that is not in a
+      #quoted string can be replaced with a single space. In practice s3 seems to just replace multiple spaces
+      #unless the entire header is quoted
+      def normalize_header_value(header)
+        if header =~ /\A".*"\z/
+          header
+        else
+          header.strip.gsub(/\s+/, ' ')
+        end
+      end
+      
       def signed_headers(headers)
         headers.keys.map {|key| key.to_s.downcase}.sort.join(';')
       end
